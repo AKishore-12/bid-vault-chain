@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Clock, DollarSign, Users, Gavel, Info } from 'lucide-react';
+import { Clock, DollarSign, Users, Gavel } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Auction {
@@ -11,20 +10,34 @@ interface Auction {
   title: string;
   description: string;
   image: string;
+  images?: string[];
   currentBid: number;
   startingBid: number;
   endTime: Date;
   bidCount: number;
   status: 'active' | 'ended' | 'upcoming';
   category: string;
+  seller: {
+    name: string;
+    avatar: string;
+    rating: number;
+  };
+  bidHistory: {
+    id: string;
+    username: string;
+    amount: number;
+    timestamp: Date;
+    hash: string;
+  }[];
 }
 
 interface AuctionCardProps {
   auction: Auction;
   onBid?: (auctionId: string, amount: number) => void;
+  onClick?: (auction: Auction) => void;
 }
 
-export const AuctionCard = ({ auction, onBid }: AuctionCardProps) => {
+export const AuctionCard = ({ auction, onBid, onClick }: AuctionCardProps) => {
   const [bidAmount, setBidAmount] = useState(auction.currentBid + 10);
   const [isPlacingBid, setIsPlacingBid] = useState(false);
   const { toast } = useToast();
@@ -67,7 +80,10 @@ export const AuctionCard = ({ auction, onBid }: AuctionCardProps) => {
   };
 
   return (
-    <Card className="bg-gradient-card border-border shadow-card hover:shadow-elegant transition-all duration-300 group">
+    <Card 
+      className="bg-gradient-card border-border shadow-card hover:shadow-elegant transition-all duration-300 group cursor-pointer"
+      onClick={() => onClick?.(auction)}
+    >
       <CardHeader className="p-0">
         <div className="relative overflow-hidden rounded-t-lg">
           <img 
@@ -80,37 +96,10 @@ export const AuctionCard = ({ auction, onBid }: AuctionCardProps) => {
               {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
             </Badge>
           </div>
-          <div className="absolute top-4 right-4 flex gap-2">
+          <div className="absolute top-4 right-4">
             <Badge variant="secondary" className="bg-background/80 text-foreground">
               {auction.category}
             </Badge>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="secondary" size="sm" className="h-8 w-8 p-0 bg-background/80 hover:bg-background/90">
-                  <Info className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-foreground">{auction.title}</h4>
-                  <p className="text-sm text-muted-foreground">{auction.description}</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Starting Bid:</span>
-                      <div className="font-semibold text-foreground">${auction.startingBid.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Current Bid:</span>
-                      <div className="font-semibold text-primary">${auction.currentBid.toLocaleString()}</div>
-                    </div>
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Category:</span>
-                    <span className="ml-2 font-medium text-foreground">{auction.category}</span>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
           </div>
         </div>
       </CardHeader>
