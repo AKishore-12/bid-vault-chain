@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, DollarSign, Users, Gavel } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Clock, DollarSign, Users, Gavel, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Auction {
@@ -79,10 +80,37 @@ export const AuctionCard = ({ auction, onBid }: AuctionCardProps) => {
               {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
             </Badge>
           </div>
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 flex gap-2">
             <Badge variant="secondary" className="bg-background/80 text-foreground">
               {auction.category}
             </Badge>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="secondary" size="sm" className="h-8 w-8 p-0 bg-background/80 hover:bg-background/90">
+                  <Info className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-foreground">{auction.title}</h4>
+                  <p className="text-sm text-muted-foreground">{auction.description}</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Starting Bid:</span>
+                      <div className="font-semibold text-foreground">${auction.startingBid.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Current Bid:</span>
+                      <div className="font-semibold text-primary">${auction.currentBid.toLocaleString()}</div>
+                    </div>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Category:</span>
+                    <span className="ml-2 font-medium text-foreground">{auction.category}</span>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </CardHeader>

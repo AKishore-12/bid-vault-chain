@@ -3,7 +3,7 @@ import { AuctionCard } from '@/components/AuctionCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, TrendingUp, Clock, Users } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 
 // Mock auction data - replace with actual API calls
 import rolexImage from '@/assets/rolex-submariner.jpg';
@@ -98,9 +98,6 @@ const Dashboard = () => {
     ));
   };
 
-  const totalValue = auctions.reduce((sum, auction) => sum + auction.currentBid, 0);
-  const activeAuctions = auctions.filter(a => a.status === 'active').length;
-  const totalBids = auctions.reduce((sum, auction) => sum + auction.bidCount, 0);
 
   return (
     <div className="space-y-8">
@@ -114,24 +111,6 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-card border border-border rounded-lg p-6 text-center">
-          <TrendingUp className="h-8 w-8 text-success mx-auto mb-2" />
-          <div className="text-2xl font-bold text-foreground">${totalValue.toLocaleString()}</div>
-          <div className="text-sm text-muted-foreground">Total Auction Value</div>
-        </div>
-        <div className="bg-gradient-card border border-border rounded-lg p-6 text-center">
-          <Clock className="h-8 w-8 text-primary mx-auto mb-2" />
-          <div className="text-2xl font-bold text-foreground">{activeAuctions}</div>
-          <div className="text-sm text-muted-foreground">Active Auctions</div>
-        </div>
-        <div className="bg-gradient-card border border-border rounded-lg p-6 text-center">
-          <Users className="h-8 w-8 text-accent mx-auto mb-2" />
-          <div className="text-2xl font-bold text-foreground">{totalBids}</div>
-          <div className="text-sm text-muted-foreground">Total Bids Placed</div>
-        </div>
-      </div>
 
       {/* Filters */}
       <div className="bg-gradient-card border border-border rounded-lg p-6">
