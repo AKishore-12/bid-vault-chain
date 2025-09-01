@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog, DialogContent, DialogOverlay } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Clock, DollarSign, User, Hash, Calendar, Gavel, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Clock, DollarSign, User, Hash, Copy, Gavel, ChevronLeft, ChevronRight, X, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useCountdown } from '@/hooks/useCountdown';
+import { SellerProfileCard } from '@/components/SellerProfileCard';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Auction {
   id: string;
@@ -23,6 +27,10 @@ interface Auction {
     name: string;
     avatar: string;
     rating: number;
+    trustLevel: string;
+    itemsListed: number;
+    joinedDate: string;
+    completedSales: number;
   };
   bidHistory: {
     id: string;
@@ -41,25 +49,38 @@ interface AuctionModalProps {
 }
 
 export const AuctionModal = ({ auction, isOpen, onClose, onBid }: AuctionModalProps) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [bidAmount, setBidAmount] = useState(0);
   const [isPlacingBid, setIsPlacingBid] = useState(false);
+  const [showSellerProfile, setShowSellerProfile] = useState(false);
+  const [sellerProfilePosition, setSellerProfilePosition] = useState({ x: 0, y: 0 });
+  const [currentBidDisplay, setCurrentBidDisplay] = useState(0);
   const { toast } = useToast();
 
   if (!auction) return null;
 
   const images = auction.images || [auction.image];
-  const timeLeft = auction.endTime.getTime() - new Date().getTime();
-  const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const countdown = useCountdown(auction.endTime);
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  // Animate bid updates
+  useEffect(() => {
+    setCurrentBidDisplay(auction.currentBid);
+  }, [auction.currentBid]);
+
+  const handleSellerClick = (event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setSellerProfilePosition({
+      x: rect.right + 10,
+      y: rect.top,
+    });
+    setShowSellerProfile(true);
   };
 
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied to clipboard",
+      description: "Transaction hash copied successfully.",
+    });
   };
 
   const handlePlaceBid = async () => {
@@ -76,12 +97,34 @@ export const AuctionModal = ({ auction, isOpen, onClose, onBid }: AuctionModalPr
     
     setTimeout(() => {
       onBid?.(auction.id, bidAmount);
+      
+      // Animate bid increase
+      const startBid = currentBidDisplay;
+      const targetBid = bidAmount;
+      const duration = 800;
+      const startTime = Date.now();
+      
+      const animateBid = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+        const currentValue = startBid + (targetBid - startBid) * eased;
+        
+        setCurrentBidDisplay(Math.round(currentValue));
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateBid);
+        }
+      };
+      
+      requestAnimationFrame(animateBid);
+      
       toast({
         title: "Bid placed successfully",
         description: `Your bid of $${bidAmount.toLocaleString()} has been recorded on the blockchain.`,
       });
       setIsPlacingBid(false);
-      setBidAmount(auction.currentBid + 50);
+      setBidAmount(bidAmount + 50);
     }, 1500);
   };
 
@@ -98,8 +141,7 @@ export const AuctionModal = ({ auction, isOpen, onClose, onBid }: AuctionModalPr
     <AnimatePresence>
       {isOpen && (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogOverlay className="bg-background/80 backdrop-blur-sm" />
-          <DialogContent className="max-w-6xl w-full h-[90vh] p-0 bg-gradient-card border-border">
+          <DialogContent className="max-w-7xl w-full h-[95vh] p-0 bg-gradient-card border-border overflow-hidden">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -123,46 +165,29 @@ export const AuctionModal = ({ auction, isOpen, onClose, onBid }: AuctionModalPr
               {/* Main Content */}
               <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
                 {/* Left Side - Image Carousel */}
-                <div className="relative bg-secondary/20">
-                  <div className="relative h-full">
-                    <img
-                      src={images[currentImageIndex]}
-                      alt={auction.title}
-                      className="w-full h-full object-cover"
-                    />
-                    
-                    {images.length > 1 && (
-                      <>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background/90"
-                          onClick={prevImage}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-background/80 hover:bg-background/90"
-                          onClick={nextImage}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-                          {images.map((_, index) => (
-                            <button
-                              key={index}
-                              className={`w-2 h-2 rounded-full transition-colors ${
-                                index === currentImageIndex ? 'bg-primary' : 'bg-white/50'
-                              }`}
-                              onClick={() => setCurrentImageIndex(index)}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
+                <div className="relative bg-black">
+                  <div className="h-[400px] lg:h-full flex items-center justify-center">
+                    <Carousel className="w-full max-w-full">
+                      <CarouselContent>
+                        {images.map((image, index) => (
+                          <CarouselItem key={index}>
+                            <div className="relative h-[400px] lg:h-[600px] flex items-center justify-center bg-black">
+                              <img
+                                src={image}
+                                alt={`${auction.title} - Image ${index + 1}`}
+                                className="max-h-full max-w-full object-contain transition-transform duration-300 hover:scale-105 cursor-zoom-in"
+                              />
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      {images.length > 1 && (
+                        <>
+                          <CarouselPrevious className="left-4 bg-background/80 hover:bg-background/90 border-border" />
+                          <CarouselNext className="right-4 bg-background/80 hover:bg-background/90 border-border" />
+                        </>
+                      )}
+                    </Carousel>
                   </div>
                 </div>
 
@@ -176,19 +201,25 @@ export const AuctionModal = ({ auction, isOpen, onClose, onBid }: AuctionModalPr
                     </div>
 
                     {/* Seller Info */}
-                    <div className="flex items-center gap-3 p-4 bg-secondary/20 rounded-lg">
+                    <button 
+                      onClick={handleSellerClick}
+                      className="flex items-center gap-3 p-4 bg-secondary/20 rounded-lg hover:bg-secondary/30 transition-colors w-full text-left"
+                    >
                       <img
                         src={auction.seller.avatar}
                         alt={auction.seller.name}
                         className="w-12 h-12 rounded-full object-cover"
                       />
-                      <div>
+                      <div className="flex-1">
                         <div className="font-semibold text-foreground">{auction.seller.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          ⭐ {auction.seller.rating}/5 rating
+                          ⭐ {auction.seller.rating}/5 rating • {auction.seller.trustLevel}
                         </div>
                       </div>
-                    </div>
+                      <div className="text-xs text-muted-foreground">
+                        Click for profile
+                      </div>
+                    </button>
 
                     {/* Current Bid and Timer */}
                     <div className="grid grid-cols-2 gap-4">
@@ -197,21 +228,30 @@ export const AuctionModal = ({ auction, isOpen, onClose, onBid }: AuctionModalPr
                           <DollarSign className="h-4 w-4" />
                           <span className="text-sm">Current Bid</span>
                         </div>
-                        <div className="text-2xl font-bold text-primary">
-                          ${auction.currentBid.toLocaleString()}
-                        </div>
+                        <motion.div 
+                          key={currentBidDisplay}
+                          initial={{ scale: 1.2, opacity: 0.8 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                          className="text-2xl font-bold text-primary"
+                        >
+                          ${currentBidDisplay.toLocaleString()}
+                        </motion.div>
                       </div>
                       
-                      {auction.status === 'active' && timeLeft > 0 && (
+                      {auction.status === 'active' && !countdown.isExpired && (
                         <div className="p-4 bg-secondary/20 rounded-lg">
                           <div className="flex items-center gap-2 text-muted-foreground mb-1">
                             <Clock className="h-4 w-4" />
                             <span className="text-sm">Time Left</span>
+                            {countdown.isLowTime && (
+                              <Zap className="h-4 w-4 text-destructive animate-pulse" />
+                            )}
                           </div>
-                          <div className="text-lg font-bold text-accent">
-                            {days > 0 ? `${days}d ` : ''}
-                            {hours > 0 ? `${hours}h ` : ''}
-                            {minutes}m
+                          <div className={`text-lg font-bold font-mono ${
+                            countdown.isLowTime ? 'text-destructive animate-pulse' : 'text-accent'
+                          }`}>
+                            {countdown.formattedTime}
                           </div>
                         </div>
                       )}
@@ -226,36 +266,51 @@ export const AuctionModal = ({ auction, isOpen, onClose, onBid }: AuctionModalPr
                         Blockchain Transaction History
                       </h3>
                       <div className="space-y-3 max-h-40 overflow-y-auto">
-                        {auction.bidHistory.map((bid) => (
-                          <motion.div
-                            key={bid.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center justify-between p-3 bg-secondary/10 rounded border-l-2 border-primary/30"
-                          >
-                            <div className="flex items-center gap-3">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <div className="font-medium text-foreground">{bid.username}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {bid.timestamp.toLocaleString()}
+                        <TooltipProvider>
+                          {auction.bidHistory.map((bid) => (
+                            <motion.div
+                              key={bid.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="flex items-center justify-between p-3 bg-secondary/10 rounded border-l-2 border-primary/30 hover:bg-secondary/20 transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <div className="font-medium text-foreground">{bid.username}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {bid.timestamp.toLocaleString()}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-primary">${bid.amount.toLocaleString()}</div>
-                              <div className="text-xs text-muted-foreground font-mono">
-                                {bid.hash.slice(0, 8)}...{bid.hash.slice(-6)}
+                              <div className="text-right">
+                                <div className="font-bold text-primary">${bid.amount.toLocaleString()}</div>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => copyToClipboard(bid.hash)}
+                                      className="flex items-center gap-1 text-xs text-muted-foreground font-mono hover:text-foreground transition-colors"
+                                    >
+                                      <span>{bid.hash.slice(0, 8)}...{bid.hash.slice(-6)}</span>
+                                      <Copy className="h-3 w-3" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs text-xs">
+                                      Blockchain verified transaction. Click to copy full hash: {bid.hash}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
                               </div>
-                            </div>
-                          </motion.div>
-                        ))}
+                            </motion.div>
+                          ))}
+                        </TooltipProvider>
                       </div>
                     </div>
                   </div>
 
                   {/* Bid Section */}
-                  {auction.status === 'active' && timeLeft > 0 && (
+                  {auction.status === 'active' && !countdown.isExpired && (
                     <div className="p-6 border-t border-border bg-secondary/10">
                       <div className="space-y-4">
                         <div className="flex gap-3">
@@ -285,6 +340,18 @@ export const AuctionModal = ({ auction, isOpen, onClose, onBid }: AuctionModalPr
                 </div>
               </div>
             </motion.div>
+            
+            <SellerProfileCard
+              seller={{
+                ...auction.seller,
+                itemsListed: auction.seller.itemsListed || 12,
+                joinedDate: auction.seller.joinedDate || '2023',
+                completedSales: auction.seller.completedSales || 47,
+              }}
+              isOpen={showSellerProfile}
+              onClose={() => setShowSellerProfile(false)}
+              position={sellerProfilePosition}
+            />
           </DialogContent>
         </Dialog>
       )}
