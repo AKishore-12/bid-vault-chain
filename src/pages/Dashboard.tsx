@@ -1,16 +1,11 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { AuctionCard } from '@/components/AuctionCard';
 import { AuctionModal } from '@/components/AuctionModal';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { Search, SlidersHorizontal, Filter, ChevronDown, Bell, TrendingUp } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Search, Filter, SlidersHorizontal } from 'lucide-react';
 
 // Mock auction data - replace with actual API calls
 import rolexImage from '@/assets/rolex-submariner.jpg';
@@ -34,11 +29,7 @@ const mockAuctions = [
     seller: {
       name: 'WatchCollector_Pro',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      rating: 4.9,
-      trustLevel: 'Verified',
-      itemsListed: 24,
-      joinedDate: '2022',
-      completedSales: 89,
+      rating: 4.9
     },
     bidHistory: [
       {
@@ -72,11 +63,7 @@ const mockAuctions = [
     seller: {
       name: 'ArtGallery_Elite',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      rating: 4.8,
-      trustLevel: 'Trusted',
-      itemsListed: 8,
-      joinedDate: '2023',
-      completedSales: 31,
+      rating: 4.8
     },
     bidHistory: [
       {
@@ -103,11 +90,7 @@ const mockAuctions = [
     seller: {
       name: 'ModelCars_Expert',
       avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face',
-      rating: 4.7,
-      trustLevel: 'Verified',
-      itemsListed: 15,
-      joinedDate: '2023',
-      completedSales: 62,
+      rating: 4.7
     },
     bidHistory: [
       {
@@ -134,11 +117,7 @@ const mockAuctions = [
     seller: {
       name: 'AntiqueDealer_1925',
       avatar: 'https://images.unsplash.com/photo-1494790108755-2616b332c38e?w=150&h=150&fit=crop&crop=face',
-      rating: 4.9,
-      trustLevel: 'New',
-      itemsListed: 3,
-      joinedDate: '2024',
-      completedSales: 7,
+      rating: 4.9
     },
     bidHistory: [
       {
@@ -161,23 +140,6 @@ const Dashboard = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState<typeof mockAuctions[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userBids, setUserBids] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
-
-  // Simulate outbid notifications
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() < 0.1) { // 10% chance every 30 seconds
-        toast({
-          title: "You've been outbid!",
-          description: "Someone placed a higher bid on the Rolex Submariner.",
-          variant: "destructive",
-        });
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [toast]);
 
   const categories = ['all', 'Art', 'Watches', 'Collectibles', 'Antiques', 'Jewelry'];
 
@@ -222,8 +184,6 @@ const Dashboard = () => {
         : auction
     ));
 
-    setUserBids(prev => new Set([...prev, auctionId]));
-
     // Update selected auction if it's the same one
     if (selectedAuction?.id === auctionId) {
       setSelectedAuction(prev => prev ? {
@@ -244,125 +204,110 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Live Auctions</h1>
-            <p className="text-muted-foreground">Discover and bid on exclusive items secured by blockchain technology</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
-            </Button>
-            <ThemeToggle />
-          </div>
-        </div>
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          Live Blockchain Auctions
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Secure, transparent bidding powered by blockchain technology
+        </p>
+      </div>
 
-        {/* Enhanced Search and Filters */}
-        <div className="bg-gradient-card border border-border rounded-lg p-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
+
+      {/* Enhanced Filters */}
+      <div className="bg-gradient-card border border-border rounded-lg p-6">
+        <div className="flex flex-col gap-4">
+          {/* Search and Toggle */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search auctions by title or description..."
+                  placeholder="Search auctions..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 bg-secondary border-border"
                 />
               </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+              </Button>
               
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2"
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-4 py-2 bg-secondary border border-border rounded-md text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="ending-soon">Ending Soon</option>
+                <option value="highest-bid">Highest Bid</option>
+                <option value="most-bids">Most Bids</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-4 py-2 bg-secondary border border-border rounded-md text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Filters
-                </Button>
-                
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ending-soon">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4" />
-                        Ending Soon
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="highest-bid">Highest Bid</SelectItem>
-                    <SelectItem value="most-bids">Most Bids</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {categories.map(category => (
+                    <option key={category} value={category}>
+                      {category === 'all' ? 'All Categories' : category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Price Range: ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}
+                </label>
+                <Slider
+                  value={priceRange}
+                  onValueChange={setPriceRange}
+                  max={200000}
+                  min={0}
+                  step={1000}
+                  className="w-full"
+                />
               </div>
             </div>
-
-            <Collapsible open={showFilters} onOpenChange={setShowFilters}>
-              <CollapsibleContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">Category</label>
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map(category => (
-                          <SelectItem key={category} value={category}>
-                            {category === 'all' ? 'All Categories' : category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-foreground mb-2 block">
-                      Price Range: ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}
-                    </label>
-                    <Slider
-                      value={priceRange}
-                      onValueChange={setPriceRange}
-                      max={200000}
-                      min={0}
-                      step={1000}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Auctions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {sortedAuctions.map((auction, index) => (
-          <motion.div
+        {sortedAuctions.map(auction => (
+          <AuctionCard
             key={auction.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="relative"
-          >
-            <AuctionCard
-              auction={auction}
-              onClick={handleAuctionClick}
-              hasBid={userBids.has(auction.id)}
-            />
-            {userBids.has(auction.id) && (
-              <Badge className="absolute top-2 right-2 bg-success text-success-foreground">
-                Your Bid
-              </Badge>
-            )}
-          </motion.div>
+            auction={auction}
+            onBid={handleBid}
+            onClick={handleAuctionClick}
+          />
         ))}
       </div>
+
+      {/* Auction Modal */}
+      <AuctionModal
+        auction={selectedAuction}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onBid={handleBid}
+      />
 
       {sortedAuctions.length === 0 && (
         <div className="text-center py-12">
@@ -372,16 +317,8 @@ const Dashboard = () => {
           </Button>
         </div>
       )}
-
-      {/* Auction Modal */}
-      <AuctionModal
-        auction={selectedAuction}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onBid={handleBid}
-      />
     </div>
   );
 };
 
-export { Dashboard };
+export default Dashboard;
